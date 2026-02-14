@@ -16,7 +16,7 @@ class Config:
     # ── Dataset ───────────────────────────────────────────────────────
     dataset: str = "cifar10"          # "cifar10" | "mnist"
     data_root: str = "./data"         # download / cache directory
-    num_workers: int = 4
+    num_workers: int = 0
 
     # ── Model ─────────────────────────────────────────────────────────
     latent_dim: int = 128             # size of the flattened bottleneck

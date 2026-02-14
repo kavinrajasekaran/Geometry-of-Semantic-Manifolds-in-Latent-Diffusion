@@ -1,7 +1,8 @@
 """
 Training loop for the Deep Convolutional Auto-Encoder.
 
-Uses MSE reconstruction loss and the Adam optimiser, as requested.
+Uses MSE reconstruction loss and the Adam optimiser with cosine
+annealing LR schedule for better convergence.
 Supports GPU acceleration when available.
 """
 
@@ -11,7 +12,7 @@ import time
 import torch
 import torch.nn as nn
 from torch.optim import Adam
-from tqdm import tqdm
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from config import Config
 from model import DCAE
@@ -75,7 +76,7 @@ def train(
     device: torch.device,
 ) -> dict:
     """
-    Full training procedure.
+    Full training procedure with cosine-annealing LR schedule.
 
     Returns
     -------
@@ -86,27 +87,32 @@ def train(
     optimiser = Adam(
         model.parameters(), lr=cfg.learning_rate, weight_decay=cfg.weight_decay
     )
+    scheduler = CosineAnnealingLR(optimiser, T_max=cfg.num_epochs, eta_min=1e-6)
 
     history = {"train_loss": [], "test_loss": []}
 
     print(f"\n{'═' * 60}")
     print(f"  Training DCAE  |  dataset={cfg.dataset}  |  latent_dim={cfg.latent_dim}")
     print(f"  device={device}  |  epochs={cfg.num_epochs}  |  batch_size={cfg.batch_size}")
+    print(f"  lr={cfg.learning_rate}  |  scheduler=CosineAnnealing")
     print(f"{'═' * 60}\n")
 
     for epoch in range(1, cfg.num_epochs + 1):
         t0 = time.time()
         train_loss = train_one_epoch(model, train_loader, criterion, optimiser, device)
         test_loss = evaluate(model, test_loader, criterion, device)
+        scheduler.step()
         dt = time.time() - t0
 
         history["train_loss"].append(train_loss)
         history["test_loss"].append(test_loss)
 
+        lr_now = scheduler.get_last_lr()[0]
         print(
             f"  Epoch {epoch:3d}/{cfg.num_epochs}  │  "
             f"train_loss={train_loss:.6f}  │  "
             f"test_loss={test_loss:.6f}  │  "
+            f"lr={lr_now:.2e}  │  "
             f"time={dt:.1f}s"
         )
 
