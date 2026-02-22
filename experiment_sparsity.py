@@ -8,11 +8,8 @@ import os
 import torch
 import matplotlib.pyplot as plt
 
-from config import Config
-from dataset import get_dataloaders
-from model import DCAE
-from train import train
-from main import seed_everything
+from model import Config, DCAE
+from main import get_dataloaders, train_model, seed_everything
 
 def run_sparsity_experiment():
     # Define our bottleneck sizes. A good range covers both sufficient capacity and severe constriction.
@@ -37,7 +34,7 @@ def run_sparsity_experiment():
         model = DCAE(cfg).to(device)
         
         # Train
-        history = train(model, train_loader, test_loader, cfg, device)
+        history = train_model(model, train_loader, test_loader, cfg, device)
         final_test_loss = history["test_loss"][-1]
         final_losses.append(final_test_loss)
         

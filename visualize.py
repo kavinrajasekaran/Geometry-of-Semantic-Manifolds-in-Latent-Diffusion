@@ -14,8 +14,7 @@ import numpy as np
 import torch
 from sklearn.manifold import TSNE
 
-from config import Config
-from model import DCAE
+from model import Config, DCAE
 
 # Try importing UMAP; fall back to t-SNE if not installed
 try:
