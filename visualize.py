@@ -86,7 +86,7 @@ def plot_reconstructions(
         fig.savefig(path, dpi=150, bbox_inches="tight")
         print(f"  ✓ Reconstruction figure saved → {path}")
 
-    plt.show()
+    plt.close(fig)
 
 
 # ─── 2. Latent-space visualisation ───────────────────────────────────
@@ -166,7 +166,7 @@ def plot_latent_space(
         fig.savefig(path, dpi=150, bbox_inches="tight")
         print(f"  ✓ Latent-space figure saved → {path}")
 
-    plt.show()
+    plt.close(fig)
 
 
 # ─── 3. Loss curves ──────────────────────────────────────────────────
@@ -195,4 +195,122 @@ def plot_loss_curves(history: dict, cfg: Config, save: bool = True) -> None:
         fig.savefig(path, dpi=150, bbox_inches="tight")
         print(f"  ✓ Loss-curve figure saved → {path}")
 
-    plt.show()
+    plt.close(fig)
+
+
+# ─── 4. Latent interpolation ─────────────────────────────────────────
+@torch.no_grad()
+def plot_interpolations(
+    model: DCAE,
+    test_loader,
+    cfg: Config,
+    device: torch.device,
+    save: bool = True,
+    steps: int = 10,
+) -> None:
+    """
+    Interpolate between pairs of latent vectors to visualize the
+    smoothness and learned structure of the bottleneck manifold.
+    """
+    model.eval()
+    images, _ = next(iter(test_loader))
+    
+    num_rows = 5
+    # Ensure we don't request more than batch size
+    num_rows = min(num_rows, images.size(0) // 2)
+    images = images[:num_rows * 2].to(device)
+    
+    fig, axes = plt.subplots(num_rows, steps, figsize=(steps * 1.5, num_rows * 1.5))
+    if num_rows == 1:
+        axes = np.expand_dims(axes, 0)
+        
+    for i in range(num_rows):
+        img_a = images[2 * i : 2 * i + 1]
+        img_b = images[2 * i + 1 : 2 * i + 2]
+        
+        z_a = model.encode(img_a)
+        z_b = model.encode(img_b)
+        
+        alphas = torch.linspace(0, 1, steps=steps).to(device)
+        z_interp = z_a * (1 - alphas.view(-1, 1)) + z_b * alphas.view(-1, 1)
+        
+        recons = model.decode(z_interp)
+        
+        for j in range(steps):
+            ax = axes[i, j]
+            rec = _to_numpy_img(recons[j])
+            ax.imshow(rec, cmap="gray" if cfg.in_channels == 1 else None)
+            ax.axis("off")
+            if i == 0:
+                if j == 0:
+                    ax.set_title("Source", fontsize=10, fontweight="bold")
+                elif j == steps - 1:
+                    ax.set_title("Target", fontsize=10, fontweight="bold")
+
+    fig.suptitle(
+        f"Latent Interpolation ({steps} steps) — {cfg.dataset.upper()} | latent_dim={cfg.latent_dim}",
+        fontsize=13,
+        fontweight="bold",
+        y=1.02,
+    )
+    plt.tight_layout()
+
+    if save:
+        os.makedirs(cfg.output_dir, exist_ok=True)
+        path = os.path.join(cfg.output_dir, "interpolations.png")
+        fig.savefig(path, dpi=150, bbox_inches="tight")
+        print(f"  ✓ Latent interpolation figure saved → {path}")
+
+    plt.close(fig)
+
+
+# ─── 5. Feature inspection ───────────────────────────────────────────
+def plot_filters(model: DCAE, cfg: Config, save: bool = True) -> None:
+    """
+    Extract and visualize the weights of the first convolutional layer
+    to see the edge/texture detectors the model learned.
+    """
+    first_conv = model.encoder.blocks[0][0]
+    weight = first_conv.weight.data.cpu()  # (out_c, in_c, H, W)
+    out_c, in_c, H, W = weight.shape
+    
+    n_filters = min(out_c, 32)
+    import math
+    cols = 8
+    rows = math.ceil(n_filters / cols)
+    
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 1.2, rows * 1.2))
+    axes = axes.flatten()
+    
+    for i in range(n_filters):
+        ax = axes[i]
+        filt = weight[i].numpy() # (in_c, H, W)
+        
+        f_min, f_max = filt.min(), filt.max()
+        filt = (filt - f_min) / (f_max - f_min + 1e-8)
+        
+        if in_c == 1:
+            ax.imshow(filt[0], cmap="gray")
+        else:
+            filt = np.transpose(filt, (1, 2, 0)) # (H, W, c)
+            ax.imshow(filt)
+        ax.axis("off")
+        
+    for j in range(n_filters, len(axes)):
+        axes[j].axis("off")
+        
+    fig.suptitle(
+        f"First-Layer Convolutional Filters — {cfg.dataset.upper()}",
+        fontsize=13,
+        fontweight="bold",
+        y=1.02,
+    )
+    plt.tight_layout()
+
+    if save:
+        os.makedirs(cfg.output_dir, exist_ok=True)
+        path = os.path.join(cfg.output_dir, "filters.png")
+        fig.savefig(path, dpi=150, bbox_inches="tight")
+        print(f"  ✓ Feature inspection (filters) figure saved → {path}")
+
+    plt.close(fig)

@@ -28,8 +28,13 @@ from config import Config
 from dataset import get_dataloaders
 from model import DCAE
 from train import train
-from visualize import plot_latent_space, plot_loss_curves, plot_reconstructions
-
+from visualize import (
+    plot_latent_space,
+    plot_loss_curves,
+    plot_reconstructions,
+    plot_interpolations,
+    plot_filters,
+)
 
 # ─── Argument parser ─────────────────────────────────────────────────
 def parse_args() -> argparse.Namespace:
@@ -123,6 +128,8 @@ def main():
     # ── Visualisation ────────────────────────────────────────────────
     plot_reconstructions(model, test_loader, cfg, device)
     plot_latent_space(model, test_loader, cfg, device)
+    plot_interpolations(model, test_loader, cfg, device)
+    plot_filters(model, cfg)
 
     print(f"\n  ✓ All outputs saved to {cfg.output_dir}/")
     print("  Done.\n")
