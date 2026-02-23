@@ -36,6 +36,21 @@ def run_extraction():
                     # 'latents' shape is (batch_size, channels, height, width) -> e.g. (1, 4, 64, 64)
                     latents_tensor = callback_kwargs["latents"]
                     
+                    # 1. Save the intermediate image visually
+                    img_dir = os.path.join(config.OUTPUT_DIR, "images", class_label)
+                    os.makedirs(img_dir, exist_ok=True)
+                    
+                    with torch.no_grad():
+                        scaled_latents = latents_tensor / pipeline.vae.config.scaling_factor
+                        image_tensor = pipeline.vae.decode(scaled_latents, return_dict=False)[0]
+                        image_pil = pipeline.image_processor.postprocess(image_tensor, output_type="pil")[0]
+                        
+                        # Create a safe filename using the first 20 chars of the prompt
+                        safe_prompt = "".join([c if c.isalnum() else "_" for c in prompt])[:20]
+                        img_filename = f"{safe_prompt}_step_{step_index:02d}.png"
+                        image_pil.save(os.path.join(img_dir, img_filename))
+                    
+                    # 2. Extract latent data for clustering
                     # Detach from graph, move to CPU, convert to numpy
                     latents_np = latents_tensor.detach().cpu().numpy()
                     
