@@ -192,7 +192,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--batch_size", type=int, default=128)
     p.add_argument("--learning_rate", type=float, default=1e-3)
     p.add_argument("--weight_decay", type=float, default=1e-5)
-    p.add_argument("--num_epochs", type=int, default=30)
+    p.add_argument("--num_epochs", type=int, default=10)
     p.add_argument("--seed", type=int, default=42)
 
     # Visualisation
