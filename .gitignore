@@ -1,6 +1,6 @@
 # Data & outputs
 data/
-*.npz
+outputs/
 *.pt
 
 # Python
