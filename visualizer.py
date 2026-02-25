@@ -16,6 +16,8 @@ def plot_visualizations():
     data = np.load(in_file, allow_pickle=True)
     tsne_proj = data["tsne"]
     umap_proj = data["umap"]
+    images_tsne_proj = data.get("images_tsne")
+    images_umap_proj = data.get("images_umap")
     labels = data["labels"]
     steps = data["steps"]
     
@@ -23,9 +25,14 @@ def plot_visualizations():
     palette = sns.color_palette("tab10", len(classes))
     
     # Dictionary of projection names to arrays
-    projections = {"t-SNE": tsne_proj}
+    projections = {"Latent t-SNE": tsne_proj}
     if umap_proj is not None and len(umap_proj.shape) == 2:
-        projections["UMAP"] = umap_proj
+        projections["Latent UMAP"] = umap_proj
+
+    if images_tsne_proj is not None:
+        projections["Image t-SNE"] = images_tsne_proj
+    if images_umap_proj is not None and len(images_umap_proj.shape) == 2:
+        projections["Image UMAP"] = images_umap_proj
 
     # ─── 1. Overall Scatter (Clustering over all timesteps) ────────────────
     print("Generating Overall Scatter plots...")
@@ -42,11 +49,14 @@ def plot_visualizations():
             s=80, alpha=0.8, edgecolor='w'
         )
         
-        plt.title(f"{name} Projection of Latent Manifold (All Timesteps)", fontsize=14, fontweight='bold')
+        space_type = "Image Pixel" if "Image" in name else "Latent"
+        proj_type = name.split(" ")[-1]
+        plt.title(f"{proj_type} Projection of {space_type} Manifold (All Timesteps)", fontsize=14, fontweight='bold')
         plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
         
-        out_path = os.path.join(config.OUTPUT_DIR, f"{name.lower()}_overall.png")
+        out_name = name.lower().replace(" ", "-")
+        out_path = os.path.join(config.OUTPUT_DIR, f"{out_name}_overall.png")
         plt.savefig(out_path, dpi=200, bbox_inches='tight')
         plt.close()
         print(f"  Saved {name} overall scatter to {out_path}")
@@ -97,10 +107,13 @@ def plot_visualizations():
                           markersize=12, label='End (Semantic Crystal)'))
 
         plt.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left')
-        plt.title(f"{name} Latent Trajectories Over Denoisings", fontsize=14, fontweight='bold')
+        space_type = "Image" if "Image" in name else "Latent"
+        proj_type = name.split(" ")[-1]
+        plt.title(f"{proj_type} {space_type} Trajectories Over Denoisings", fontsize=14, fontweight='bold')
         plt.tight_layout()
         
-        out_path = os.path.join(config.OUTPUT_DIR, f"{name.lower()}_trajectories.png")
+        out_name = name.lower().replace(" ", "-")
+        out_path = os.path.join(config.OUTPUT_DIR, f"{out_name}_trajectories.png")
         plt.savefig(out_path, dpi=200, bbox_inches='tight')
         plt.close()
         print(f"  Saved {name} trajectory map to {out_path}")

@@ -54,12 +54,16 @@ def run_extraction():
                     # Detach from graph, move to CPU, convert to numpy
                     latents_np = latents_tensor.detach().cpu().numpy()
                     
+                    # Store flattened image representation too
+                    image_np = np.array(image_pil).flatten()
+                    
                     extracted_data.append({
                         "step": step_index,
                         "timestep": timestep.item(),
                         "class_label": class_label,
                         "prompt": prompt,
-                        "latents": latents_np
+                        "latents": latents_np,
+                        "image": image_np
                     })
                 return callback_kwargs
 
@@ -74,6 +78,7 @@ def run_extraction():
                 
     # ─── Compile and Save ────────────────────────────────────────────────────
     embeddings = []
+    images = []
     labels = []
     steps = []
     
@@ -81,15 +86,17 @@ def run_extraction():
         # Flatten the spatial volume (1, 4, 64, 64) to a 1D vector of length 16,384
         flat_latent = item["latents"].flatten()
         embeddings.append(flat_latent)
+        images.append(item["image"])
         labels.append(item["class_label"])
         steps.append(item["step"])
         
     embeddings = np.array(embeddings)
+    images = np.array(images)
     labels = np.array(labels)
     steps = np.array(steps)
     
     out_file = os.path.join(config.OUTPUT_DIR, "extracted_latents.npz")
-    np.savez(out_file, embeddings=embeddings, labels=labels, steps=steps)
+    np.savez(out_file, embeddings=embeddings, images=images, labels=labels, steps=steps)
     
     print(f"\n✓ Extraction complete.")
     print(f"  Total latent snapshots collected: {len(embeddings)}")
