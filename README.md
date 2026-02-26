@@ -1,79 +1,51 @@
-# Deep Convolutional Auto-Encoder (DCAE)
+# The Geometry of Semantic Manifolds in Latent Diffusion
 
-A modular PyTorch implementation of a Deep Convolutional Auto-Encoder, following the architectural principles described in [Turchenko & Luczak (2015)](https://arxiv.org/abs/1512.01596).
-
-This project implements a symmetric Encoder-Decoder architecture with a dedicated flattened bottleneck layer, allowing for explicit latent space visualization and manipulation.
+A PyTorch `diffusers` implementation to visualize the internal trajectory of how images crystallize from pure isotropic Gaussian noise within Stable Diffusion. This project extracts, flattens, and applies Unsupervised Learning dimensionality reduction techniques (PCA, t-SNE, UMAP) to the $16,384$-dimensional internal U-Net Bottleneck Tensors and corresponding VAE Image outputs to visualize the exact moment explicit "semantic manifolds" (e.g. Cats, Cars, Cities) violently branch away from overlapping noise.
 
 ## 🚀 Features
 
-- **Modular Design**: Easily swap datasets (CIFAR-10, MNIST), adjust bottleneck size, or modify network depth via configuration.
-- **Explicit Bottleneck**: A flattened linear layer between the encoder and decoder serves as the compressed latent representation.
-- **Visualization Suite**:
-  - **Reconstructions**: Side-by-side comparison of original vs. reconstructed images.
-  - **Latent Space**: 2D projection of the latent vectors using **UMAP** or **t-SNE**, colored by class.
-  - **Training Curves**: Real-time tracking of Train/Test MSE loss.
-- **PyTorch Native**: Built with `torch`, `torchvision`, and `torch.nn` modules.
+- **Latent Interception**: Custom PyTorch hooks directly into `runwayml/stable-diffusion-v1-5` to extract massive tensors mid-generation across explicit denosing timesteps (e.g. `t=50, 40, ... 0`).
+- **Parallel Output Dimensionality Reduction**: Separately flattens, PCA-compresses, and Non-Linearly embeds both internal mathematical **Latents** and final **Image Pixels**. 
+- **Publication-Ready Visualizations**: 
+  - **Overall Scatter**: Views the fully reduced manifolds across all timesteps to prove distinct semantic clustering.
+  - **Trajectory Maps**: Maps explicit generation paths starting from a central noise distribution and traversing into isolated conceptual groups.
+- **Dynamic Extensibility**: By default tracks Cats, Cars, Cities, Landscapes, and Portraits, but supports interactive custom user prompts directly via CLI!
 
 ## 📦 Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/dcae-pytorch.git
-   cd dcae-pytorch
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+git clone https://github.com/your-username/latent-diffusion-geometry.git
+cd latent-diffusion-geometry
+pip install -r requirements.txt
+```
 
 ## 🛠 Usage
+This project operates in a three-stage sequential timeline. Follow these steps in order:
 
-The `main.py` script is the single entry point for training and evaluation.
-
-### Quick Start (CIFAR-10)
-Train a standard model on CIFAR-10 with a 128-dimensional bottleneck:
+### 1. Extraction (Interception & Tensor Saving)
+Run the script to initialize Stable Diffusion, optionally input a custom test prompt through the CLI to track alongside the defaults, and write the intercepted massive tensors to `.npz` arrays.
 ```bash
-python main.py
+python3 extractor.py
 ```
 
-### Custom Configuration
-Train on MNIST with a smaller 32-dimensional bottleneck for 20 epochs:
+### 2. Dimensionality Reduction (PCA / t-SNE / UMAP)
+Compress the highly-noisy extracted latents and image pixels.
 ```bash
-python main.py --dataset mnist --latent_dim 32 --num_epochs 20
+python3 reducer.py
 ```
 
-### Visualization Options
-Use **t-SNE** instead of UMAP for the latent space scatter plot:
+### 3. Visualization
+Generate and save all trajectory and cluster plots to the `outputs/` folder.
 ```bash
-python main.py --vis_method tsne
-```
-
-### Evaluation Only
-Skip training and load a pre-trained checkpoint to generate plots:
-```bash
-python main.py --eval_only --checkpoint outputs/dcae_checkpoint.pt
+python3 visualizer.py
 ```
 
 ## 📂 Project Structure
 
 ```
 .
-├── config.py          # ⚙️ Central configuration (Hyperparameters, Paths)
-├── dataset.py         # 💾 Data loading logic (CIFAR-10, MNIST)
-├── model.py           # 🧠 DCAE Architecture (Encoder, Decoder, Bottleneck)
-├── train.py           # 🔄 Training loop & Checkpointing
-├── visualize.py       # 📊 Plotting utilities (Reconstructions, UMAP/t-SNE)
-├── main.py            # 🚀 Entry point (CLI argument parsing)
+├── config.py          # ⚙️ Constants, tracked timesteps, and default prompt definitions
+├── extractor.py       # 🧠 Injects diffusers hooks and intercepts U-Net tensors to .npz
+├── reducer.py         # 📉 Unsupervised learning pipeline (PCA/t-SNE/UMAP) 
+├── visualizer.py      # 📊 Translates reduced coordinates into Trajectory Scatterplots
 └── requirements.txt   # 📦 Python dependencies
 ```
-
-## 📐 Architecture Details
-
-- **Encoder**: 3 blocks of `Conv2d` → `BatchNorm` → `ReLU` → `MaxPool2d`. Downsamples input (e.g., 32x32) to a 4x4 feature map.
-- **Bottleneck**: Flattened 4x4 maps projected to a linear `latent_dim` vector.
-- **Decoder**: Symmetric mirror. Projects latent vector back to 4x4, then `ConvTranspose2d` (Upsampling) layers to recover original spatial dimensions.
-- **Output**: `Sigmoid` activation ensures pixel values are in `[0, 1]`.
-
-## 📄 Reference
-Turchenko, V., & Luczak, A. (2015). *Creation of a Deep Convolutional Auto-Encoder in Caffe*. arXiv preprint arXiv:1512.01596.

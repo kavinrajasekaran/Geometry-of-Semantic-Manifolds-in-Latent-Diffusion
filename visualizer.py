@@ -16,18 +16,32 @@ def plot_visualizations():
     data = np.load(in_file, allow_pickle=True)
     tsne_proj = data["tsne"]
     umap_proj = data["umap"]
-    images_tsne_proj = data.get("images_tsne")
-    images_umap_proj = data.get("images_umap")
+    images_tsne_proj = data["images_tsne"] if "images_tsne" in data else None
+    images_umap_proj = data["images_umap"] if "images_umap" in data else None
+    bottleneck_tsne_proj = data["bottleneck_tsne"] if "bottleneck_tsne" in data else None
     labels = data["labels"]
     steps = data["steps"]
     
-    classes = list(config.TEXT_PROMPTS.keys())
+    # Dynamically find all unique classes that were saved during extraction
+    # We use a stable sort or keep order from config where possible, appending any new ones
+    unique_labels = list(dict.fromkeys(labels))
+    classes = []
+    for c in config.TEXT_PROMPTS.keys():
+        if c in unique_labels:
+            classes.append(c)
+    for c in unique_labels:
+        if c not in classes:
+            classes.append(c)
+            
     palette = sns.color_palette("tab10", len(classes))
     
     # Dictionary of projection names to arrays
-    projections = {"Latent t-SNE": tsne_proj}
+    projections = {"Spatial Latent t-SNE": tsne_proj}
     if umap_proj is not None and len(umap_proj.shape) == 2:
-        projections["Latent UMAP"] = umap_proj
+        projections["Spatial Latent UMAP"] = umap_proj
+
+    if bottleneck_tsne_proj is not None:
+        projections["U-Net Bottleneck t-SNE"] = bottleneck_tsne_proj
 
     if images_tsne_proj is not None:
         projections["Image t-SNE"] = images_tsne_proj
@@ -117,6 +131,66 @@ def plot_visualizations():
         plt.savefig(out_path, dpi=200, bbox_inches='tight')
         plt.close()
         print(f"  Saved {name} trajectory map to {out_path}")
+
+    # ─── 3. Per-Timestep Grid (Cluster Emergence Over Time) ────────────────
+    print("Generating Per-Timestep cluster emergence plots...")
+    
+    unique_steps = sorted(set(steps))
+    step_labels_at = {}
+    for s in unique_steps:
+        mask = steps == s
+        step_labels_at[s] = labels[mask]
+    
+    for space_name in ["Spatial Latent", "U-Net Bottleneck", "Image"]:
+        if space_name == "Spatial Latent":
+            prefix = "tsne_step_"
+        elif space_name == "U-Net Bottleneck":
+            prefix = "bottleneck_tsne_step_"
+        else:
+            prefix = "images_tsne_step_"
+        
+        available_steps = [s for s in unique_steps if f"{prefix}{s}" in data]
+        if not available_steps:
+            continue
+        
+        n_plots = len(available_steps)
+        cols = min(3, n_plots)
+        rows = (n_plots + cols - 1) // cols
+        
+        fig, axes = plt.subplots(rows, cols, figsize=(6 * cols, 5 * rows))
+        if n_plots == 1:
+            axes = np.array([axes])
+        axes = axes.flatten()
+        
+        for idx, s in enumerate(available_steps):
+            ax = axes[idx]
+            proj_s = data[f"{prefix}{s}"]
+            labels_s = step_labels_at[s]
+            
+            for ci, cls in enumerate(classes):
+                cls_mask = labels_s == cls
+                if cls_mask.any():
+                    ax.scatter(proj_s[cls_mask, 0], proj_s[cls_mask, 1],
+                              color=palette[ci], label=cls.capitalize(),
+                              s=80, alpha=0.85, edgecolor='w')
+            
+            ax.set_title(f"Step {s}", fontsize=13, fontweight='bold')
+            ax.set_xticks([])
+            ax.set_yticks([])
+            if idx == 0:
+                ax.legend(fontsize=8, loc='best')
+        
+        # Hide unused axes
+        for idx in range(n_plots, len(axes)):
+            axes[idx].set_visible(False)
+        
+        fig.suptitle(f"{space_name} Manifold Clustering Over Denoising Steps", fontsize=16, fontweight='bold', y=1.02)
+        fig.tight_layout()
+        
+        out_path = os.path.join(config.OUTPUT_DIR, f"{space_name.lower()}_per_step_grid.png")
+        fig.savefig(out_path, dpi=200, bbox_inches='tight')
+        plt.close(fig)
+        print(f"  Saved {space_name} per-step grid to {out_path}")
 
     print("✓ Visualizations completed successfully.")
 
