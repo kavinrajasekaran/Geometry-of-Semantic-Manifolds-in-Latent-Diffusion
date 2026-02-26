@@ -22,9 +22,10 @@ def run_extraction():
     
     os.makedirs(config.OUTPUT_DIR, exist_ok=True)
     
+
     extracted_data = []
 
-    # Optional: ask user if they want to add a custom prompt for testing
+    # Optional: ask user if they want to  add a custom prompt for testing
     add_prompt = input("Do you want to add a custom prompt for testing? (y/n, leave blank for no): ").strip().lower()
     if add_prompt == 'y' or add_prompt == 'yes':
         user_prompt = input("What is your custom prompt?: ").strip()
