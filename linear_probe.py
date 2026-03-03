@@ -1,16 +1,3 @@
-"""
-linear_probe.py — Trains linear classifiers on the latent representations at each
-timestep to measure how much semantic class information is encoded over time.
-
-This directly tests whether the latent space is linearly separable by category.
-If accuracy increases over denoising steps, it proves the semantic manifolds
-are forming even if 2D projections can't cleanly visualize them.
-
-Outputs:
-  - A plot of classification accuracy vs. denoising step
-  - A numerical table of accuracy scores
-"""
-
 import os
 import numpy as np
 from sklearn.decomposition import PCA
@@ -53,9 +40,7 @@ def run_linear_probe():
     n_classes = len(classes)
     random_chance = 1.0 / n_classes
     
-    print("=" * 70)
-    print("LINEAR PROBE ANALYSIS")
-    print("=" * 70)
+    print("Linear Probe Analysis")
     print(f"Classes: {classes}")
     print(f"Random chance accuracy: {random_chance:.1%}")
     print(f"Tracked timesteps: {unique_steps}")
@@ -160,7 +145,7 @@ def run_linear_probe():
             "stds": step_stds
         }
     
-    # ─── Plot ────────────────────────────────────────────────────────────────
+    # Plot
     print("\nGenerating accuracy plot...")
     
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -199,12 +184,7 @@ def run_linear_probe():
     plt.close()
     print(f"  Saved accuracy plot to {out_path}")
     
-    print(f"\n{'=' * 70}")
-    print("INTERPRETATION:")
-    print(f"  If accuracy >> {random_chance:.0%} (random chance), the latent space")
-    print("  contains linearly separable semantic information at that step.")
-    print("  An inflection point indicates when the model 'commits' to a concept.")
-    print(f"{'=' * 70}")
+
 
 if __name__ == "__main__":
     run_linear_probe()

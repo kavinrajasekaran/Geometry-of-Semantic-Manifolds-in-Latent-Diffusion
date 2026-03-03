@@ -1,7 +1,3 @@
-"""
-visualizer.py — Creates publication-ready semantic scatter and trajectory plots.
-"""
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -48,7 +44,7 @@ def plot_visualizations():
     if images_umap_proj is not None and len(images_umap_proj.shape) == 2:
         projections["Image UMAP"] = images_umap_proj
 
-    # ─── 1. Overall Scatter (Clustering over all timesteps) ────────────────
+    # 1. Overall Scatter (Clustering over all timesteps)
     print("Generating Overall Scatter plots...")
     for name, proj in projections.items():
         plt.figure(figsize=(10, 8))
@@ -75,11 +71,8 @@ def plot_visualizations():
         plt.close()
         print(f"  Saved {name} overall scatter to {out_path}")
 
-    # ─── 2. Line Trajectories (Tracking generations over time) ──────────────
+    # 2. Line Trajectories (Tracking generations over time)
     print("Generating Latent Trajectory plots...")
-    
-    # Because we loop Class > Prompt > Step, the steps for a single image generation
-    # are continuously chunked together in our arrays.
     pts_per_prompt = len(config.TRACKING_INTERVALS)
     
     for name, proj in projections.items():
@@ -132,7 +125,7 @@ def plot_visualizations():
         plt.close()
         print(f"  Saved {name} trajectory map to {out_path}")
 
-    # ─── 3. Per-Timestep Grid (Cluster Emergence Over Time) ────────────────
+    # 3. Per-Timestep Grid (Cluster Emergence Over Time)
     print("Generating Per-Timestep cluster emergence plots...")
     
     unique_steps = sorted(set(steps))
@@ -192,7 +185,7 @@ def plot_visualizations():
         plt.close(fig)
         print(f"  Saved {space_name} per-step grid to {out_path}")
 
-    print("✓ Visualizations completed successfully.")
+    print("Visualizations completed successfully.")
 
 if __name__ == "__main__":
     plot_visualizations()

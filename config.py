@@ -1,16 +1,11 @@
-"""
-config.py — Configuration parameters for the Latent Diffusion Geometry project.
-"""
-
-# ─── Model Settings ──────────────────────────────────────────────────────────
+# Model Settings
 MODEL_ID = "runwayml/stable-diffusion-v1-5"
 NUM_INFERENCE_STEPS = 50
 
 # Which inference step indices to intercept (0 = pure noise, 49 = final image)
 TRACKING_INTERVALS = [0, 10, 20, 30, 40, 49]
 
-# ─── Prompt Configurations ───────────────────────────────────────────────────
-# We group prompts into 5 distinct semantic concepts to track their clustering.
+# Prompt Configurations
 TEXT_PROMPTS = {
     "cat": [
         "A high quality photo of a fluffy cat",
@@ -64,5 +59,5 @@ TEXT_PROMPTS = {
     ]
 }
 
-# ─── File Paths ──────────────────────────────────────────────────────────────
+# File Paths
 OUTPUT_DIR = "outputs"

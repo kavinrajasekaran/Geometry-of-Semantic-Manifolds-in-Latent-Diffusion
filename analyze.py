@@ -1,16 +1,3 @@
-"""
-analyze.py — Computes numerical clustering quality metrics on the reduced projections.
-
-Outputs Silhouette Score and Nearest-Neighbor Purity for each representation
-(Spatial Latent, U-Net Bottleneck, Image Pixels) at each timestep.
-
-Silhouette Score: ranges from -1 (terrible) to +1 (perfect clustering).
-  > 0.5 = strong clustering, 0.25-0.5 = moderate, < 0.25 = weak/no clustering
-
-Nearest-Neighbor Purity: fraction of each point's nearest neighbor that shares
-  the same class label. Random chance = 1/num_classes = 0.2 for 5 classes.
-"""
-
 import os
 import numpy as np
 from sklearn.metrics import silhouette_score
@@ -45,9 +32,7 @@ def run_analysis():
     unique_steps = sorted(set(steps))
     classes = sorted(set(labels))
     
-    print("=" * 70)
-    print("CLUSTERING QUALITY ANALYSIS")
-    print("=" * 70)
+    print("Clustering Quality Analysis")
     print(f"Classes: {classes}")
     print(f"Total samples: {len(labels)}")
     print(f"Tracked timesteps: {unique_steps}")
@@ -105,13 +90,7 @@ def run_analysis():
         
         print(f"  {'ALL':>6}  {sil_all:>12.4f}  {purity_all:>12.1%}")
     
-    print(f"\n{'=' * 70}")
-    print("INTERPRETATION GUIDE:")
-    print("  Silhouette > 0.5  = Classes are well-separated")
-    print("  Silhouette 0.25-0.5 = Moderate separation")
-    print("  Silhouette < 0.25 = Weak/no separation")
-    print(f"  NN Purity random chance = {1/len(classes):.1%} (for {len(classes)} classes)")
-    print(f"{'=' * 70}")
+
 
 if __name__ == "__main__":
     run_analysis()

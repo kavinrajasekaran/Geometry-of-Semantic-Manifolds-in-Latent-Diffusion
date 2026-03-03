@@ -1,7 +1,3 @@
-"""
-reducer.py — Applies PCA, t-SNE, and UMAP to reduce the large tensor dimensionality.
-"""
-
 import os
 import numpy as np
 from sklearn.decomposition import PCA
@@ -28,9 +24,7 @@ def apply_dimensionality_reduction():
     labels = data["labels"]
     steps = data["steps"]
     
-    # ─── 1. PCA (Noise Reduction) ────────────────────────────────────────────
-    # High-dimensional manifolds are noisy. Reducing down to ~50 dimensions captures 
-    # the maximum variance and stabilizes t-SNE/UMAP.
+    # 1. PCA
     n_components = min(50, len(embeddings))
     print(f"Applying PCA on Spatial Latents (reducing to {n_components} components)...")
     pca = PCA(n_components=n_components, random_state=42)
@@ -49,7 +43,7 @@ def apply_dimensionality_reduction():
         pca_img = PCA(n_components=n_components, random_state=42)
         images_pca = pca_img.fit_transform(images)
     
-    # ─── 2. t-SNE ────────────────────────────────────────────────────────────
+    # 2. t-SNE
     perplexity = min(30, len(embeddings) - 1)
     print(f"Applying t-SNE on Spatial Latents (perplexity={perplexity})...")
     tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity, init='pca', learning_rate='auto')
@@ -67,8 +61,7 @@ def apply_dimensionality_reduction():
         tsne_img = TSNE(n_components=2, random_state=42, perplexity=perplexity, init='pca', learning_rate='auto')
         tsne_proj_img = tsne_img.fit_transform(images_pca)
     
-    # ─── 3. UMAP ─────────────────────────────────────────────────────────────
-    # UMAP preserves global topology well (great for seeing the distances between classes).
+    # 3. UMAP
     umap_proj = None
     umap_proj_img = None
     if _HAS_UMAP:
@@ -81,13 +74,11 @@ def apply_dimensionality_reduction():
             reducer_img = UMAP(n_components=2, random_state=42, n_neighbors=10, min_dist=0.1)
             umap_proj_img = reducer_img.fit_transform(images_pca)
     else:
-        print("⚠ UMAP not installed. Only falling back to t-SNE.")
+        print("UMAP not installed. Falling back to t-SNE.")
         if images_pca is not None:
             umap_proj_img = tsne_proj_img
         
-    # ─── 4. Per-Timestep Reduction ────────────────────────────────────────────
-    # Running t-SNE on ALL timesteps mixed together dilutes clustering signal.
-    # Per-timestep plots show how clusters EMERGE over time.
+    # 4. Per-Timestep Reduction
     unique_steps = sorted(set(steps))
     per_step_tsne = {}
     per_step_tsne_img = {}
@@ -150,7 +141,7 @@ def apply_dimensionality_reduction():
         
     out_file = os.path.join(config.OUTPUT_DIR, "reduced_latents.npz")
     np.savez(out_file, **save_dict)
-    print(f"✓ Reduction complete. Data saved to {out_file}")
+    print(f"Reduction complete. Data saved to {out_file}")
 
 if __name__ == "__main__":
     apply_dimensionality_reduction()

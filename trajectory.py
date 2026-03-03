@@ -1,18 +1,3 @@
-"""
-trajectory.py — Computes trajectory curvature metrics for each prompt's
-denoising path through the latent space.
-
-Measures:
-  1. Sinuosity: Total path length / straight-line distance.
-     A value of 1.0 means a perfectly straight path.
-     Higher values indicate more wandering/curved trajectories.
-
-  2. Angular Deviation: The average angle (in degrees) between consecutive
-     path segments. 0° = perfectly straight, 180° = complete reversal.
-
-All computations are done in PCA-reduced space (50D) for numerical stability,
-not in the 2D t-SNE space, since t-SNE distorts real distances.
-"""
 
 import os
 import numpy as np
@@ -48,9 +33,7 @@ def run_trajectory_analysis():
     if bottlenecks is not None:
         representations["U-Net Bottleneck"] = bottlenecks
     
-    print("=" * 70)
-    print("TRAJECTORY CURVATURE ANALYSIS")
-    print("=" * 70)
+    print("Trajectory Curvature Analysis")
     print(f"Total prompts: {total_prompts}")
     print(f"Steps per trajectory: {pts_per_prompt} ({unique_steps})")
     print()
@@ -133,7 +116,7 @@ def run_trajectory_analysis():
             mean_ang = np.mean(class_angles[cls])
             print(f"  {'[' + cls.upper() + ']':>40}  {'':>10}  {mean_sin:>10.2f}  {mean_ang:>9.1f}°")
         
-        # ─── Plot: Sinuosity by Class ────────────────────────────────────────
+        # Plot: Sinuosity by Class
         classes = sorted(class_sinuosities.keys())
         fig, axes = plt.subplots(1, 2, figsize=(14, 6))
         
@@ -174,7 +157,7 @@ def run_trajectory_analysis():
         plt.close()
         print(f"\n  Saved curvature plot to {out_path}")
         
-        # ─── Plot: Per-step displacement magnitude ───────────────────────────
+        # Plot: Per-step displacement magnitude
         fig, ax = plt.subplots(figsize=(10, 6))
         
         for cls in classes:
@@ -211,15 +194,7 @@ def run_trajectory_analysis():
         plt.close()
         print(f"  Saved displacement plot to {out_path2}")
     
-    print(f"\n{'=' * 70}")
-    print("INTERPRETATION:")
-    print("  Sinuosity ≈ 1.0: Trajectory is a straight line (direct path)")
-    print("  Sinuosity >> 1.0: Trajectory wanders/curves significantly")
-    print("  Angular deviation ≈ 0°: Path continues in same direction each step")
-    print("  Angular deviation >> 90°: Path makes sharp turns between steps")
-    print("  Compare classes: Do some categories take more direct paths than others?")
-    print("  Compare mixed prompts: Does 'cat on a car' have higher sinuosity?")
-    print(f"{'=' * 70}")
+
 
 if __name__ == "__main__":
     run_trajectory_analysis()

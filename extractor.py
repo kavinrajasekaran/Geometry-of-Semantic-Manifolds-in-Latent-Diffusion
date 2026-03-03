@@ -1,11 +1,3 @@
-"""
-extractor.py — Intercepts and saves latent tensors from Stable Diffusion.
-
-We extract TWO representations at each tracked denoising step:
-  1. The denoising spatial latent (1, 4, 64, 64) — encodes image layout
-  2. The U-Net mid-block bottleneck feature — encodes semantic meaning
-"""
-
 import os
 import torch
 import numpy as np
@@ -25,7 +17,7 @@ def run_extraction():
 
     extracted_data = []
 
-    # Optional: ask user if they want to  add a custom prompt for testing
+    # Ask user for a custom prompt (optional)
     add_prompt = input("Do you want to add a custom prompt for testing? (y/n, leave blank for no): ").strip().lower()
     if add_prompt == 'y' or add_prompt == 'yes':
         user_prompt = input("What is your custom prompt?: ").strip()
@@ -40,10 +32,7 @@ def run_extraction():
                 config.TEXT_PROMPTS[user_cat] = [user_prompt]
             print(f"Added custom prompt '{user_prompt}' under category '{user_cat}'.\n")
 
-    # ─── Hook into U-Net mid-block to capture semantic bottleneck features ────
-    # The mid_block is the deepest layer of the U-Net. It processes the most
-    # abstract, semantically compressed representation of the image.
-    # This is where "cat-ness" vs "car-ness" is encoded, NOT in the spatial latent.
+    # Hook into U-Net mid-block to capture bottleneck features
     mid_block_output = {}
     
     def mid_block_hook(module, input, output):
@@ -51,9 +40,9 @@ def run_extraction():
     
     hook_handle = pipe.unet.mid_block.register_forward_hook(mid_block_hook)
     
-    print("Starting prompt generation and latent extraction...")
+    print("Starting generation...")
     for class_label, prompts in config.TEXT_PROMPTS.items():
-        print(f"\n→ Processing class: [{class_label.upper()}]")
+        print(f"\nProcessing class: [{class_label.upper()}]")
         
         for prompt in prompts:
             print(f"    Generating: '{prompt}'")
@@ -111,7 +100,7 @@ def run_extraction():
     # Remove the hook after extraction is done
     hook_handle.remove()
                 
-    # ─── Compile and Save ────────────────────────────────────────────────────
+    # Compile and Save
     embeddings = []
     bottlenecks = []
     images = []
@@ -148,7 +137,7 @@ def run_extraction():
     out_file = os.path.join(config.OUTPUT_DIR, "extracted_latents.npz")
     np.savez(out_file, **save_dict)
     
-    print(f"\n✓ Extraction complete.")
+    print(f"\nExtraction complete.")
     print(f"  Total latent snapshots collected: {len(embeddings)}")
     print(f"  Spatial latent shape: {embeddings.shape} (Flattened VAE latents)")
     print(f"  Data saved to: {out_file}")
